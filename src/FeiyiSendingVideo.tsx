@@ -19,6 +19,11 @@ const colors = {
   jade: '#6f8f82',
 };
 
+const FPS = 30;
+const seconds = (value: number) => value * FPS;
+const FREEZE_FRAME = seconds(11);
+const useTimelineFrame = () => Math.min(useCurrentFrame(), FREEZE_FRAME);
+
 const skills = ['技艺', '纹样', '器物', '故事'];
 const phases = ['传承', '传播', '再生'];
 const pathWords = ['坚守匠心', '活态传承', '数字连接', '走进生活'];
@@ -73,7 +78,11 @@ const Seal: React.FC<{left: number; top: number; text: string; scale?: number}> 
 );
 
 const ParticleField: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useTimelineFrame();
+  const fieldIn = interpolate(frame, [seconds(2.4), seconds(3.2)], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
   return (
     <>
       {Array.from({length: 56}).map((_, index) => {
@@ -93,7 +102,7 @@ const ParticleField: React.FC = () => {
               height: 3 + (index % 4),
               borderRadius: 999,
               background: index % 3 === 0 ? colors.gold : index % 3 === 1 ? colors.cinnabar : colors.indigo,
-              opacity: 0.18 + shimmer * 0.42,
+              opacity: fieldIn * (0.18 + shimmer * 0.42),
               boxShadow: index % 3 === 0 ? `0 0 16px ${colors.gold}` : 'none',
             }}
           />
@@ -104,9 +113,16 @@ const ParticleField: React.FC = () => {
 };
 
 const FlowLine: React.FC = () => {
-  const frame = useCurrentFrame();
-  const dashOffset = -frame * 8;
-  const glowLength = interpolate(frame, [0, 170, 239], [0, 2350, 2700]);
+  const frame = useTimelineFrame();
+  const dashOffset = -(frame - seconds(2.5)) * 8;
+  const lineIn = interpolate(frame, [seconds(2.45), seconds(3.1)], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+  const glowLength = interpolate(frame, [seconds(2.5), seconds(6), seconds(8.6)], [0, 1500, 2700], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
 
   return (
     <svg
@@ -122,7 +138,7 @@ const FlowLine: React.FC = () => {
         strokeWidth="5"
         strokeDasharray="18 24"
         strokeDashoffset={dashOffset}
-        opacity="0.72"
+        opacity={0.72 * lineIn}
       />
       <path
         d="M 20 220 C 310 64, 520 92, 770 210 S 1215 357, 1515 195 S 2050 63, 2520 215"
@@ -131,7 +147,7 @@ const FlowLine: React.FC = () => {
         strokeWidth="8"
         strokeLinecap="round"
         strokeDasharray={`${glowLength} 2800`}
-        opacity="0.92"
+        opacity={0.92 * lineIn}
         filter="drop-shadow(0 0 14px rgba(214,168,77,.8))"
       />
       <path
@@ -139,7 +155,7 @@ const FlowLine: React.FC = () => {
         fill="none"
         stroke={colors.paleGold}
         strokeWidth="2"
-        opacity="0.74"
+        opacity={0.74 * lineIn}
       />
     </svg>
   );
@@ -153,7 +169,7 @@ const Node: React.FC<{
   start: number;
   tone?: 'red' | 'blue' | 'gold';
 }> = ({x, y, label, sub, start, tone = 'gold'}) => {
-  const frame = useCurrentFrame();
+  const frame = useTimelineFrame();
   const active = spring({frame: frame - start, fps: 30, config: {damping: 14, stiffness: 80}});
   const pulse = Math.sin((frame - start) / 8) * 0.5 + 0.5;
   const color = tone === 'red' ? colors.cinnabar : tone === 'blue' ? colors.indigo : colors.gold;
@@ -206,7 +222,7 @@ const MessageBubble: React.FC<{left: number; top: number; text: string; start: n
   start,
   accent,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useTimelineFrame();
   const entrance = spring({frame: frame - start, fps: 30, config: {damping: 16, stiffness: 100}});
   const float = Math.sin((frame - start) / 18) * 8;
 
@@ -235,10 +251,108 @@ const MessageBubble: React.FC<{left: number; top: number; text: string; start: n
   );
 };
 
+
+const Workshop: React.FC = () => {
+  const frame = useTimelineFrame();
+  const appear = spring({frame: frame - seconds(0.25), fps: FPS, config: {damping: 18, stiffness: 62}});
+  const ember = interpolate(frame, [seconds(1.2), seconds(2.5)], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: 120,
+        top: 380,
+        width: 420,
+        height: 360,
+        opacity: clamp(appear),
+        transform: `translateY(${(1 - appear) * 44}px)`,
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          left: 20,
+          top: 20,
+          width: 360,
+          height: 92,
+          clipPath: 'polygon(50% 0, 100% 76%, 92% 100%, 8% 100%, 0 76%)',
+          background: `linear-gradient(135deg, ${colors.cinnabarDark}, ${colors.cinnabar})`,
+          boxShadow: '0 18px 28px rgba(29,25,19,.18)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: 54,
+          top: 104,
+          width: 292,
+          height: 190,
+          border: `5px solid ${colors.ink}`,
+          borderTop: 0,
+          background: 'rgba(255,249,233,.62)',
+          boxShadow: 'inset 0 0 0 8px rgba(214,168,77,.12)',
+        }}
+      />
+      <div style={{position: 'absolute', left: 112, top: 172, width: 172, height: 26, background: colors.indigo, borderRadius: 16}} />
+      <div style={{position: 'absolute', left: 118, top: 198, width: 160, height: 64, border: `4px solid ${colors.gold}`, borderTop: 0}} />
+      <div style={{position: 'absolute', left: 152, top: 130, width: 58, height: 58, borderRadius: 999, background: colors.riceDeep, border: `4px solid ${colors.ink}`}} />
+      <div style={{position: 'absolute', left: 164, top: 188, width: 38, height: 82, background: colors.cinnabar, borderRadius: 18}} />
+      <div
+        style={{
+          position: 'absolute',
+          left: 208,
+          top: 196,
+          width: 92,
+          height: 8,
+          background: colors.ink,
+          transform: 'rotate(-18deg)',
+          transformOrigin: 'left center',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: 278,
+          top: 176,
+          width: 52,
+          height: 52,
+          borderRadius: 999,
+          background: `rgba(214,168,77,${0.28 + ember * 0.45})`,
+          boxShadow: `0 0 ${18 + ember * 30}px ${colors.gold}`,
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: 42,
+          top: 304,
+          padding: '12px 22px',
+          borderRadius: 999,
+          background: 'rgba(255,249,233,.86)',
+          border: `3px solid ${colors.cinnabar}`,
+          color: colors.cinnabarDark,
+          fontSize: 30,
+          fontWeight: 900,
+          letterSpacing: 1,
+        }}
+      >
+        传统工坊
+      </div>
+    </div>
+  );
+};
+
 const Phone: React.FC = () => {
-  const frame = useCurrentFrame();
-  const scan = interpolate(frame % 74, [0, 74], [-80, 470]);
-  const appear = spring({frame: frame - 82, fps: 30, config: {damping: 18, stiffness: 70}});
+  const frame = useTimelineFrame();
+  const scanProgress = Math.max(0, frame - seconds(6)) % 74;
+  const scan = interpolate(scanProgress, [0, 74], [-80, 470]);
+  const appear = spring({frame: frame - seconds(6), fps: FPS, config: {damping: 18, stiffness: 70}});
+  const playback = spring({frame: frame - seconds(6.55), fps: FPS, config: {damping: 15, stiffness: 95}});
+  const likes = ['▶', '赞', '评', '藏'];
 
   return (
     <div
@@ -284,14 +398,61 @@ const Phone: React.FC = () => {
         />
         <div style={{position: 'absolute', left: 62, top: 256, width: 162, height: 162, border: `8px solid ${colors.cinnabar}`, borderRadius: 18}} />
         <div style={{position: 'absolute', left: 91, top: 285, width: 104, height: 104, border: `7px solid ${colors.indigo}`, borderRadius: 14}} />
+        <div
+          style={{
+            position: 'absolute',
+            left: 106,
+            top: 318,
+            width: 74,
+            height: 74,
+            borderRadius: 999,
+            background: 'rgba(255,249,233,.86)',
+            display: 'grid',
+            placeItems: 'center',
+            color: colors.cinnabar,
+            fontSize: 36,
+            fontWeight: 900,
+            opacity: clamp(playback),
+            transform: `scale(${0.72 + playback * 0.28})`,
+          }}
+        >
+          ▶
+        </div>
+        {likes.slice(1).map((item, index) => {
+          const iconIn = spring({frame: frame - seconds(6.85) - index * 11, fps: FPS, config: {damping: 14, stiffness: 80}});
+          return (
+            <div
+              key={item}
+              style={{
+                position: 'absolute',
+                right: 24,
+                bottom: 120 - index * 60,
+                width: 48,
+                height: 48,
+                borderRadius: 999,
+                background: 'rgba(255,249,233,.9)',
+                border: `2px solid ${index === 1 ? colors.indigo : colors.gold}`,
+                color: index === 1 ? colors.indigo : colors.cinnabar,
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: 22,
+                fontWeight: 900,
+                opacity: clamp(iconIn),
+                transform: `translateX(${(1 - iconIn) * 34}px)`,
+              }}
+            >
+              {item}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
 const TitleBlock: React.FC = () => {
-  const frame = useCurrentFrame();
-  const titleIn = spring({frame, fps: 30, config: {damping: 16, stiffness: 58}});
+  const frame = useTimelineFrame();
+  const titleIn = spring({frame, fps: FPS, config: {damping: 16, stiffness: 58}});
   return (
     <div style={{position: 'absolute', left: 170, top: 140, opacity: clamp(titleIn), transform: `translateY(${(1 - titleIn) * 46}px)`}}>
       <div style={{display: 'flex', alignItems: 'center', gap: 22}}>
@@ -318,11 +479,11 @@ const TitleBlock: React.FC = () => {
 };
 
 const SkillCards: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useTimelineFrame();
   return (
     <div style={{position: 'absolute', left: 570, top: 695, display: 'flex', gap: 22}}>
       {skills.map((skill, index) => {
-        const pop = spring({frame: frame - 32 - index * 6, fps: 30, config: {damping: 13, stiffness: 90}});
+        const pop = spring({frame: frame - seconds(3.05) - index * 18, fps: FPS, config: {damping: 13, stiffness: 90}});
         return (
           <div
             key={skill}
@@ -352,14 +513,14 @@ const SkillCards: React.FC = () => {
 const PhaseRibbon: React.FC = () => (
   <div style={{position: 'absolute', left: 1170, top: 155, display: 'flex', gap: 28}}>
     {phases.map((phase, index) => (
-      <MessageBubble key={phase} left={index * 190} top={index % 2 ? 66 : 0} text={phase} start={58 + index * 13} accent={index === 1 ? colors.indigo : colors.gold} />
+      <MessageBubble key={phase} left={index * 190} top={index % 2 ? 66 : 0} text={phase} start={seconds(6.35) + index * 18} accent={index === 1 ? colors.indigo : colors.gold} />
     ))}
   </div>
 );
 
 const ClosingStatement: React.FC = () => {
-  const frame = useCurrentFrame();
-  const show = spring({frame: frame - 144, fps: 30, config: {damping: 18, stiffness: 64}});
+  const frame = useTimelineFrame();
+  const show = spring({frame: frame - seconds(9), fps: FPS, config: {damping: 18, stiffness: 64}});
   return (
     <div
       style={{
@@ -399,11 +560,19 @@ const ClosingStatement: React.FC = () => {
 };
 
 export const FeiyiSendingVideo: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useTimelineFrame();
   const {durationInFrames} = useVideoConfig();
-  const progress = frame / (durationInFrames - 1);
-  const cameraX = interpolate(progress, [0, 1], [0, -760]);
-  const finalGlow = interpolate(frame, [185, 225, 239], [0, 1, 0.75], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  const cameraX = interpolate(
+    frame,
+    [0, seconds(2.4), seconds(6), seconds(8.8), seconds(10.4), durationInFrames - 1],
+    [0, -70, -590, -930, -820, -820],
+    {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'},
+  );
+  const cameraScale = interpolate(frame, [seconds(9), seconds(10.4), durationInFrames - 1], [1, 0.92, 0.92], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+  const finalGlow = interpolate(frame, [seconds(9), seconds(10.5), durationInFrames - 1], [0, 1, 0.75], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
 
   return (
     <AbsoluteFill style={{fontFamily: 'Noto Serif CJK SC, Source Han Serif SC, SimSun, serif', overflow: 'hidden'}}>
@@ -414,7 +583,8 @@ export const FeiyiSendingVideo: React.FC = () => {
           position: 'absolute',
           width: 2860,
           height: 1080,
-          transform: `translateX(${cameraX}px)`,
+          transform: `translateX(${cameraX}px) scale(${cameraScale})`,
+          transformOrigin: '960px 540px',
           willChange: 'transform',
         }}
       >
@@ -423,12 +593,13 @@ export const FeiyiSendingVideo: React.FC = () => {
         <Seal left={2420} top={92} text="未来\n已达" scale={0.88} />
         <TitleBlock />
         <FlowLine />
-        <Node x={470} y={384} label="源" sub="手艺人｜文化的源头" start={20} tone="red" />
+        <Workshop />
+        <Node x={470} y={384} label="源" sub="手艺人｜文化的源头" start={seconds(0.75)} tone="red" />
         <SkillCards />
-        <Node x={1010} y={510} label="传" start={66} tone="gold" />
-        <Node x={1470} y={362} label="播" start={92} tone="blue" />
-        <Node x={2145} y={520} label="生" start={132} tone="red" />
-        <MessageBubble left={880} top={262} text="文化消息已启程" start={45} accent={colors.gold} />
+        <Node x={1010} y={510} label="传" start={seconds(4.15)} tone="gold" />
+        <Node x={1470} y={362} label="播" start={seconds(5.05)} tone="blue" />
+        <Node x={2145} y={520} label="生" start={seconds(7.6)} tone="red" />
+        <MessageBubble left={880} top={262} text="文化消息已启程" start={seconds(3.25)} accent={colors.gold} />
         <PhaseRibbon />
         <Phone />
         <ClosingStatement />
