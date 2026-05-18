@@ -2,7 +2,7 @@
   "name": "feiyi-remotion-video",
   "version": "1.0.0",
   "private": true,
-  "description": "Remotion + React project for the 8-second FeiyiSendingVideo information visualization animation.",
+  "description": "Remotion + React project for the 12-second FeiyiSendingVideo information visualization animation.",
   "scripts": {
     "dev": "remotion studio src/index.ts",
     "render": "remotion render src/index.ts FeiyiSendingVideo out/feiyi-sending-video.mp4"
